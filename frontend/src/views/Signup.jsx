@@ -1,9 +1,37 @@
 import { Navigate, Link } from "react-router-dom";
+import { useRef } from "react";
+import AxiosClient from "../axios-client";
+import { useStateContext } from "../Context/ContextProvider";
 
 export default function Signup () {
 
+    const nameRef = useRef();
+    const emailRef = useRef();
+    const passwordRef = useRef();
+    const confirmPassworfRef = useRef();
+
+    const {setUser,setToken} = useStateContext();
+
     const onSubmit = (ev) => {
         ev.preventDefault();
+        const payload = {
+            name: nameRef.current.value,
+            email:emailRef.current.value,
+            password:passwordRef.current.value,
+            password_confirmation:confirmPassworfRef.current.value,
+        }
+        AxiosClient.post('/signup', payload)
+        .then(({data}) => {
+            
+            setUser(data.user)
+            setToken(data.token)
+        })
+        .catch(err => {
+            const response = err.response;
+            if (response && response.status == 422) {
+                console.log(response.data.errors);
+            }
+        })
     }
 
     return (
@@ -15,13 +43,14 @@ export default function Signup () {
               className="flex flex-col gap-4 w-full"
             >
                 <input
-                type="text"
+                ref={nameRef}
                 placeholder="Full Name"
                 className="w-full px-4 py-2 bg-THIRD rounded-md focus:outline-none text-white placeholder-white"
                 required
               />
 
               <input
+                ref={emailRef}
                 type="email"
                 placeholder="Email"
                 className="w-full px-4 py-2 bg-THIRD rounded-md focus:outline-none text-white placeholder-white"
@@ -29,6 +58,7 @@ export default function Signup () {
               />
               <div className="relative">
                 <input
+                  ref={passwordRef}
                   type="password"
                   placeholder="Password"
                   className="w-full px-4 py-2 bg-THIRD rounded-md focus:outline-none text-white placeholder-white"
@@ -37,6 +67,7 @@ export default function Signup () {
               </div>
               <div className="relative">
                 <input
+                  ref={confirmPassworfRef}
                   type="password"
                   placeholder="Confirm Password"
                   className="w-full px-4 py-2 bg-THIRD rounded-md focus:outline-none text-white placeholder-white"
