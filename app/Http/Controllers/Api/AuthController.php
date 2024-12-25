@@ -5,62 +5,66 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\SignupRequest;
-use Illuminate\Http\Request;
 use App\Models\User;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class AuthController extends Controller
 {
-    // Login method
-    public function login(LoginRequest $request)
-    {
-        $data = $request->validated();
-
-        if (!Auth::attempt($data)) {
-            return response([
-                'message' => 'Invalid credentials'
-            ], 401);
-        }
-
-        /** @var \App\Models\User $user */
-        $user = Auth::user();
-        $token = $user->createToken('main')->plainTextToken;
-
-        return response([
-            'user' => $user,
-            'token' => $token
-        ]);
-    }
-
-    // Signup method
     public function signup(SignupRequest $request)
     {
+        // Validasi data yang diterima dari request
         $data = $request->validated();
 
-        /** @var \App\Models\User $user */
+        // Buat user baru
         $user = User::create([
             'name' => $data['name'],
             'email' => $data['email'],
-            'password' => bcrypt($data['password']),
+            'password' => bcrypt($data['password']), // Enkripsi password
         ]);
 
+        // Buat token untuk user
         $token = $user->createToken('main')->plainTextToken;
 
-        return response([
+        // Kembalikan respons dalam format JSON
+        return response()->json([
             'user' => $user,
-            'token' => $token
+            'token' => $token,
+        ], 201); // Status code 201 untuk resource yang dibuat
+    }
+
+    public function login(LoginRequest $request)
+    {
+        // Validasi kredensial yang diterima
+        $credentials = $request->validated();
+
+        // Cek apakah kredensial valid
+        if (!Auth::attempt($credentials)) {
+            return response()->json([
+                'message' => 'Provided email or password is incorrect',
+            ], 422); // Status code 422 jika kredensial salah
+        }
+
+        // Ambil user yang sudah terautentikasi
+        $user = Auth::user();
+        $token = $user->createToken('main')->plainTextToken;
+
+        // Kembalikan respons dalam format JSON
+        return response()->json([
+            'user' => $user,
+            'token' => $token,
         ]);
     }
 
-    // Logout method
     public function logout(Request $request)
     {
-        /** @var \App\Models\User $user */
+        // Ambil user yang sedang login
         $user = $request->user();
-        $user->tokens()->delete();
 
-        return response([
-            'message' => 'Logged out successfully'
-        ]);
+        // Hapus token yang sedang digunakan
+        $user->currentAccessToken()->delete();
+
+        // Kembalikan respons kosong dengan status 204 (No Content)
+        return response()->json([], 204);
     }
 }
